@@ -2,7 +2,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Logo from '@/components/Logo';
 import { Button } from '@/components/ui/button';
-import { CirclePlay, Video } from 'lucide-react';
+import { CirclePlay, Mail } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 const Webinar = () => {
   const [videoEnded, setVideoEnded] = useState(false);
@@ -30,9 +33,9 @@ const Webinar = () => {
     }
   };
 
-  const handleCalendlyClick = () => {
-    // En una implementación real, esto abriría Calendly
-    window.open('https://calendly.com/your-calendly-link', '_blank');
+  const handleContactClick = () => {
+    // Aquí se puede implementar una acción para contactar al usuario usando los datos del formulario
+    alert("¡Gracias por tu interés! Nuestro equipo te contactará pronto.");
   };
 
   return (
@@ -83,29 +86,77 @@ const Webinar = () => {
               </h2>
               
               <p className="text-white/80 text-lg">
-                Agende una videollamada con uno de nuestros expertos para recibir una consultoría personalizada.
+                Nuestro equipo de expertos estará encantado de contactarte para brindarte una consultoría personalizada.
               </p>
               
               <Button 
-                onClick={handleCalendlyClick}
+                onClick={handleContactClick}
                 className="bg-viralOrange hover:bg-viralOrange/90 text-white text-lg font-bold py-6 px-8 rounded-full"
               >
-                <Video className="w-5 h-5 mr-2" />
-                Reservar una videollamada
+                <Mail className="w-5 h-5 mr-2" />
+                Contáctame
               </Button>
             </div>
           )}
           
-          <div className="mt-12 p-6 bg-white/5 rounded-lg border border-white/10">
-            <h3 className="text-xl font-bold text-white mb-4">Lo que nuestros clientes dicen</h3>
+          {/* Testimonios */}
+          <div className="mt-16">
+            <h2 className="text-2xl font-bold text-white mb-8">Clientes felices con nuestros servicios</h2>
             
-            <div className="space-y-4">
-              <p className="text-white/80 italic">
-                "Gracias a ViralClicker hemos aumentado nuestras conversiones en un 150% en solo 3 meses."
-              </p>
-              <p className="text-viralOrange font-semibold">
-                - María González, CEO de MarketingPro
-              </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Testimonio 1 */}
+              <Card className="bg-white/5 border border-white/10">
+                <CardContent className="pt-6">
+                  <div className="flex flex-col items-center">
+                    <Avatar className="w-20 h-20 mb-4 border-2 border-viralOrange">
+                      <AvatarImage src="https://source.unsplash.com/random/300×300/?businesswoman" alt="Cliente 1" />
+                      <AvatarFallback className="bg-viralOrange text-white">MC</AvatarFallback>
+                    </Avatar>
+                    <p className="text-white/90 text-center italic mb-4">
+                      "Gracias a ViralClicker hemos aumentado nuestras conversiones en un 150% en solo 3 meses."
+                    </p>
+                    <p className="text-viralOrange font-semibold">
+                      María Castillo, CEO de MarketingPro
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Testimonio 2 */}
+              <Card className="bg-white/5 border border-white/10">
+                <CardContent className="pt-6">
+                  <div className="flex flex-col items-center">
+                    <Avatar className="w-20 h-20 mb-4 border-2 border-viralOrange">
+                      <AvatarImage src="https://source.unsplash.com/random/300×300/?businessman" alt="Cliente 2" />
+                      <AvatarFallback className="bg-viralOrange text-white">JR</AvatarFallback>
+                    </Avatar>
+                    <p className="text-white/90 text-center italic mb-4">
+                      "La estrategia personalizada que nos brindó ViralClicker incrementó nuestras ventas en un 200% el primer año."
+                    </p>
+                    <p className="text-viralOrange font-semibold">
+                      Javier Rodríguez, Director de TechSolutions
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Testimonio 3 */}
+              <Card className="bg-white/5 border border-white/10">
+                <CardContent className="pt-6">
+                  <div className="flex flex-col items-center">
+                    <Avatar className="w-20 h-20 mb-4 border-2 border-viralOrange">
+                      <AvatarImage src="https://source.unsplash.com/random/300×300/?entrepreneur" alt="Cliente 3" />
+                      <AvatarFallback className="bg-viralOrange text-white">LM</AvatarFallback>
+                    </Avatar>
+                    <p className="text-white/90 text-center italic mb-4">
+                      "Nunca pensé que podríamos captar tantos leads calificados. ViralClicker ha revolucionado nuestra forma de hacer marketing."
+                    </p>
+                    <p className="text-viralOrange font-semibold">
+                      Laura Méndez, Fundadora de InnovaShop
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>

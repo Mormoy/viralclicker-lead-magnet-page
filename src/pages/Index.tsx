@@ -66,6 +66,15 @@ const Index = () => {
           <p className="text-white/70 text-lg md:text-xl mt-8">
             Más de 500 empresas confían en nosotros
           </p>
+          
+          {/* Imagen 16:9 del webinar */}
+          <div className="mt-6 w-full aspect-video rounded-lg overflow-hidden">
+            <img 
+              src="/lovable-uploads/fdafc651-14c1-4db1-8d9d-a4a0171a29b6.png" 
+              alt="Webinar ViralClicker" 
+              className="w-full h-full object-cover"
+            />
+          </div>
         </div>
 
         {/* Formulario Modal */}
