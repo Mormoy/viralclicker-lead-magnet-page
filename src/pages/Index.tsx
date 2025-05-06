@@ -67,8 +67,11 @@ const Index = () => {
             Más de 500 empresas confían en nosotros
           </p>
           
-          {/* Imagen 16:9 del webinar */}
-          <div className="mt-6 w-full aspect-video rounded-lg overflow-hidden">
+          {/* Imagen 16:9 del webinar - ahora clickeable */}
+          <div 
+            className="mt-6 w-full aspect-video rounded-lg overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]" 
+            onClick={handleOpenForm}
+          >
             <img 
               src="/lovable-uploads/fdafc651-14c1-4db1-8d9d-a4a0171a29b6.png" 
               alt="Webinar ViralClicker" 
