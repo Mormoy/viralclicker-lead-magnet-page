@@ -60,20 +60,23 @@ const LeadForm = ({ isOpen, onClose, onSubmit }: LeadFormProps) => {
     setIsSubmitting(true);
     
     try {
-      // Construct email data with formspree.io
-      const response = await fetch('https://formspree.io/f/info@viralclicker.com', {
+      // Usar la URL correcta de formspree.io
+      const response = await fetch('https://formspree.io/f/xledrjyw', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          ...data,
-          subject: 'Nuevo Lead de ViralClicker',
+          name: data.fullName,
+          phone: data.phone,
+          email: data.email,
+          _subject: 'Nuevo Lead de ViralClicker',
           _replyto: data.email,
         }),
       });
       
       if (!response.ok) {
+        console.error('Error response:', await response.text());
         throw new Error('Error al enviar el formulario');
       }
       
