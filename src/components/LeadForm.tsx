@@ -70,8 +70,11 @@ const LeadForm = ({ isOpen, onClose, onSubmit }: LeadFormProps) => {
           name: data.fullName,
           phone: data.phone,
           email: data.email,
-          _subject: 'Nuevo Lead de ViralClicker',
+          _subject: 'Nuevo Lead de ViralClicker - Registro Inicial',
           _replyto: data.email,
+          estado: 'Registro Inicial - Usuario ha proporcionado sus datos',
+          fecha_registro: new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' }),
+          origen: window.location.href
         }),
       });
       
@@ -100,7 +103,8 @@ const LeadForm = ({ isOpen, onClose, onSubmit }: LeadFormProps) => {
         localStorage.setItem('viralclicker_user', JSON.stringify({
           ...formData,
           registrationDate: new Date().toISOString(),
-          webinarCompleted: false
+          webinarCompleted: false,
+          lastStage: 'registro_inicial'
         }));
         
         onSubmit(formData);

@@ -14,6 +14,10 @@ const Webinar = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
   
+  // Tracking checkpoints for the video (percentages)
+  const checkpoints = [25, 50, 75];
+  const [checkpointsReached, setCheckpointsReached] = useState<number[]>([]);
+  
   // Get user data from localStorage
   const getUserData = () => {
     const userData = localStorage.getItem('viralclicker_user');
@@ -25,11 +29,22 @@ const Webinar = () => {
     const userData = getUserData();
     
     if (userData) {
+      // Update user stage
+      const updatedUserData = {
+        ...userData,
+        lastStage: 'llegada_webinar',
+        webinarVisitTime: new Date().toISOString()
+      };
+      
+      localStorage.setItem('viralclicker_user', JSON.stringify(updatedUserData));
+      
       // Send notification email that user arrived at the webinar page
       sendTrackingEmail({
-        ...userData,
+        ...updatedUserData,
         action: 'webinar_visit',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        estado: 'Llegada al Webinar - Usuario ha accedido a la página del webinar',
+        detalles: 'El usuario ha visitado la página del webinar pero aún no ha iniciado el video'
       });
     }
     
@@ -37,22 +52,39 @@ const Webinar = () => {
     const handleBeforeUnload = () => {
       const userData = getUserData();
       if (userData && !userData.webinarCompleted && videoStarted) {
+        // Get current video progress
+        const currentTime = videoRef.current ? Math.floor(videoRef.current.currentTime) : 0;
+        const duration = videoRef.current ? Math.floor(videoRef.current.duration || 0) : 0;
+        const progressPercent = duration > 0 ? Math.floor((currentTime / duration) * 100) : 0;
+        
         // Update local storage to track that user did not complete the webinar
-        localStorage.setItem('viralclicker_user', JSON.stringify({
+        const updatedUserData = {
           ...userData,
           webinarLeft: new Date().toISOString(),
           webinarCompleted: false,
-          videoProgress: videoRef.current ? Math.floor(videoRef.current.currentTime) : 0
-        }));
+          videoProgress: currentTime,
+          videoDuration: duration,
+          videoProgressPercent: progressPercent,
+          lastStage: 'abandono_webinar'
+        };
         
-        // Note: This won't actually send an email on page close due to browser limitations
-        // We'll rely on the next visit to send this data
-        navigator.sendBeacon('https://formspree.io/f/info@viralclicker.com', JSON.stringify({
-          ...userData,
-          action: 'webinar_abandoned',
-          timestamp: new Date().toISOString(),
-          videoProgress: videoRef.current ? Math.floor(videoRef.current.currentTime) : 0
-        }));
+        localStorage.setItem('viralclicker_user', JSON.stringify(updatedUserData));
+        
+        // Use sendBeacon API to send data when page is closing
+        const formData = new FormData();
+        
+        // Add data to FormData
+        formData.append('name', userData.fullName || '');
+        formData.append('email', userData.email || '');
+        formData.append('phone', userData.phone || '');
+        formData.append('_subject', 'Cliente ha Abandonado el Webinar - ViralClicker');
+        formData.append('estado', `Abandono del Webinar - Progreso: ${progressPercent}%`);
+        formData.append('detalles', `El usuario vio ${currentTime} segundos de ${duration} segundos totales (${progressPercent}%)`);
+        formData.append('fecha_abandono', new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' }));
+        formData.append('checkpoints_alcanzados', checkpointsReached.join(', '));
+        
+        // Send data using navigator.sendBeacon
+        navigator.sendBeacon('https://formspree.io/f/xwpoboln', formData);
       }
     };
     
@@ -61,50 +93,55 @@ const Webinar = () => {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [videoStarted]);
+  }, [videoStarted, checkpointsReached]);
 
   // Track video completion
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    
-    if (videoStarted) {
-      // In a real implementation, we would use the actual video duration
-      timer = setTimeout(() => {
-        setVideoEnded(true);
+    if (videoEnded) {
+      // Mark webinar as completed in localStorage
+      const userData = getUserData();
+      if (userData) {
+        const updatedUserData = {
+          ...userData,
+          webinarCompleted: true,
+          completionDate: new Date().toISOString(),
+          lastStage: 'webinar_completado'
+        };
         
-        // Mark webinar as completed in localStorage
-        const userData = getUserData();
-        if (userData) {
-          localStorage.setItem('viralclicker_user', JSON.stringify({
-            ...userData,
-            webinarCompleted: true,
-            completionDate: new Date().toISOString()
-          }));
-          
-          // Send completion notification
-          sendTrackingEmail({
-            ...userData,
-            action: 'webinar_completed',
-            timestamp: new Date().toISOString()
-          });
-        }
-      }, 15000); // 15 segundos para simular fin del video
+        localStorage.setItem('viralclicker_user', JSON.stringify(updatedUserData));
+        
+        // Send completion notification
+        sendTrackingEmail({
+          ...updatedUserData,
+          action: 'webinar_completed',
+          timestamp: new Date().toISOString(),
+          estado: 'Webinar Completado - Usuario ha visto el webinar completo',
+          detalles: 'El usuario ha finalizado la visualización completa del video del webinar',
+          checkpoints_alcanzados: checkpointsReached.join(', '),
+          fecha_completado: new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })
+        });
+      }
     }
-    
-    return () => clearTimeout(timer);
-  }, [videoStarted]);
+  }, [videoEnded, checkpointsReached]);
 
   const sendTrackingEmail = async (data: any) => {
     try {
-      const response = await fetch('https://formspree.io/f/info@viralclicker.com', {
+      const response = await fetch('https://formspree.io/f/xwpoboln', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          ...data,
-          subject: `ViralClicker Tracking: ${data.action}`,
-          _replyto: data.email || 'noreply@viralclicker.com'
+          name: data.fullName,
+          phone: data.phone,
+          email: data.email,
+          _subject: `ViralClicker - ${data.estado || data.action}`,
+          estado: data.estado,
+          detalles: data.detalles,
+          fecha: new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' }),
+          accion: data.action,
+          progreso_video: data.videoProgressPercent ? `${data.videoProgressPercent}%` : 'No iniciado',
+          checkpoints_alcanzados: data.checkpoints_alcanzados || 'Ninguno'
         }),
       });
       
@@ -123,10 +160,21 @@ const Webinar = () => {
       // Track video start
       const userData = getUserData();
       if (userData) {
-        sendTrackingEmail({
+        const updatedUserData = {
           ...userData,
+          videoStarted: true,
+          videoStartTime: new Date().toISOString(),
+          lastStage: 'inicio_video'
+        };
+        
+        localStorage.setItem('viralclicker_user', JSON.stringify(updatedUserData));
+        
+        sendTrackingEmail({
+          ...updatedUserData,
           action: 'video_started',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          estado: 'Inicio de Video - Usuario ha comenzado a ver el webinar',
+          detalles: 'El usuario ha hecho clic en reproducir y ha comenzado a ver el video'
         });
       }
     }
@@ -136,10 +184,21 @@ const Webinar = () => {
     const userData = getUserData();
     
     if (userData) {
-      sendTrackingEmail({
+      const updatedUserData = {
         ...userData,
+        contactRequested: true,
+        contactRequestTime: new Date().toISOString(),
+        lastStage: 'solicitud_contacto'
+      };
+      
+      localStorage.setItem('viralclicker_user', JSON.stringify(updatedUserData));
+      
+      sendTrackingEmail({
+        ...updatedUserData,
         action: 'contact_requested',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        estado: 'Solicitud de Contacto - Usuario ha solicitado ser contactado',
+        detalles: 'El usuario ha completado el webinar y ha solicitado ser contactado por el equipo de ventas'
       });
       
       toast({
@@ -159,28 +218,83 @@ const Webinar = () => {
   const handleTimeUpdate = () => {
     if (videoRef.current) {
       const currentTime = Math.floor(videoRef.current.currentTime);
-      const duration = Math.floor(videoRef.current.duration);
+      const duration = Math.floor(videoRef.current.duration || 0);
       
-      // Track progress at 25%, 50%, 75% points
-      const progressPoints = [0.25, 0.5, 0.75];
-      const currentProgress = currentTime / duration;
-      
-      progressPoints.forEach(point => {
-        if (Math.abs(currentProgress - point) < 0.01) {
-          const userData = getUserData();
-          if (userData) {
-            sendTrackingEmail({
-              ...userData,
-              action: `video_progress_${Math.floor(point * 100)}`,
-              timestamp: new Date().toISOString(),
-              videoProgress: currentTime,
-              videoDuration: duration
+      if (duration > 0) {
+        const progressPercent = Math.floor((currentTime / duration) * 100);
+        
+        // Check if we've hit any checkpoints
+        checkpoints.forEach(checkpoint => {
+          if (progressPercent >= checkpoint && !checkpointsReached.includes(checkpoint)) {
+            // Add this checkpoint to our reached checkpoints
+            setCheckpointsReached(prev => {
+              const newCheckpoints = [...prev, checkpoint].sort((a, b) => a - b);
+              
+              // Send checkpoint notification
+              const userData = getUserData();
+              if (userData) {
+                const updatedUserData = {
+                  ...userData,
+                  lastCheckpoint: checkpoint,
+                  videoProgress: currentTime,
+                  videoDuration: duration,
+                  videoProgressPercent: progressPercent,
+                  lastStage: `checkpoint_${checkpoint}`
+                };
+                
+                localStorage.setItem('viralclicker_user', JSON.stringify(updatedUserData));
+                
+                sendTrackingEmail({
+                  ...updatedUserData,
+                  action: `video_progress_${checkpoint}`,
+                  timestamp: new Date().toISOString(),
+                  estado: `Progreso del Video: ${checkpoint}% - Usuario continúa viendo el webinar`,
+                  detalles: `El usuario ha alcanzado el ${checkpoint}% del webinar (${currentTime} segundos de ${duration} segundos)`,
+                  videoProgress: currentTime,
+                  videoDuration: duration,
+                  videoProgressPercent: progressPercent,
+                  checkpoints_alcanzados: newCheckpoints.join(', ')
+                });
+              }
+              
+              return newCheckpoints;
             });
           }
+        });
+        
+        // Also update localStorage with the current progress
+        const userData = getUserData();
+        if (userData && currentTime % 30 === 0) {  // Update every 30 seconds
+          const updatedUserData = {
+            ...userData,
+            videoProgress: currentTime,
+            videoDuration: duration,
+            videoProgressPercent: progressPercent
+          };
+          
+          localStorage.setItem('viralclicker_user', JSON.stringify(updatedUserData));
         }
-      });
+      }
     }
   };
+
+  // Use a simulated video ending for testing or short videos
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    
+    if (videoStarted && videoRef.current) {
+      videoRef.current.addEventListener('ended', () => {
+        setVideoEnded(true);
+      });
+    }
+    
+    return () => {
+      if (videoRef.current) {
+        videoRef.current.removeEventListener('ended', () => setVideoEnded(true));
+      }
+      clearTimeout(timer);
+    };
+  }, [videoStarted]);
 
   return (
     <div className="flex flex-col min-h-screen bg-viralDark">
