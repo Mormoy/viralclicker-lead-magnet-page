@@ -61,7 +61,7 @@ const LeadForm = ({ isOpen, onClose, onSubmit }: LeadFormProps) => {
     
     try {
       // Usar la URL correcta de formspree.io
-      const response = await fetch('https://formspree.io/f/xledrjyw', {
+      const response = await fetch('https://formspree.io/f/xwpoboln', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
