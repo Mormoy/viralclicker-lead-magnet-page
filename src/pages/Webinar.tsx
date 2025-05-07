@@ -6,36 +6,180 @@ import { CirclePlay, Mail } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { useToast } from '@/hooks/use-toast';
 
 const Webinar = () => {
   const [videoEnded, setVideoEnded] = useState(false);
   const [videoStarted, setVideoStarted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const { toast } = useToast();
+  
+  // Get user data from localStorage
+  const getUserData = () => {
+    const userData = localStorage.getItem('viralclicker_user');
+    return userData ? JSON.parse(userData) : null;
+  };
+  
+  // Track when user arrives at the webinar page
+  useEffect(() => {
+    const userData = getUserData();
+    
+    if (userData) {
+      // Send notification email that user arrived at the webinar page
+      sendTrackingEmail({
+        ...userData,
+        action: 'webinar_visit',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // Set up listener for when user leaves the page
+    const handleBeforeUnload = () => {
+      const userData = getUserData();
+      if (userData && !userData.webinarCompleted && videoStarted) {
+        // Update local storage to track that user did not complete the webinar
+        localStorage.setItem('viralclicker_user', JSON.stringify({
+          ...userData,
+          webinarLeft: new Date().toISOString(),
+          webinarCompleted: false,
+          videoProgress: videoRef.current ? Math.floor(videoRef.current.currentTime) : 0
+        }));
+        
+        // Note: This won't actually send an email on page close due to browser limitations
+        // We'll rely on the next visit to send this data
+        navigator.sendBeacon('https://formspree.io/f/info@viralclicker.com', JSON.stringify({
+          ...userData,
+          action: 'webinar_abandoned',
+          timestamp: new Date().toISOString(),
+          videoProgress: videoRef.current ? Math.floor(videoRef.current.currentTime) : 0
+        }));
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [videoStarted]);
 
-  // Este efecto simula que el video ha terminado después de 15 segundos
-  // En una implementación real, usarías el evento onEnded del video
+  // Track video completion
   useEffect(() => {
     let timer: NodeJS.Timeout;
     
     if (videoStarted) {
+      // In a real implementation, we would use the actual video duration
       timer = setTimeout(() => {
         setVideoEnded(true);
+        
+        // Mark webinar as completed in localStorage
+        const userData = getUserData();
+        if (userData) {
+          localStorage.setItem('viralclicker_user', JSON.stringify({
+            ...userData,
+            webinarCompleted: true,
+            completionDate: new Date().toISOString()
+          }));
+          
+          // Send completion notification
+          sendTrackingEmail({
+            ...userData,
+            action: 'webinar_completed',
+            timestamp: new Date().toISOString()
+          });
+        }
       }, 15000); // 15 segundos para simular fin del video
     }
     
     return () => clearTimeout(timer);
   }, [videoStarted]);
 
+  const sendTrackingEmail = async (data: any) => {
+    try {
+      const response = await fetch('https://formspree.io/f/info@viralclicker.com', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...data,
+          subject: `ViralClicker Tracking: ${data.action}`,
+          _replyto: data.email || 'noreply@viralclicker.com'
+        }),
+      });
+      
+      return response.ok;
+    } catch (error) {
+      console.error('Error sending tracking data:', error);
+      return false;
+    }
+  };
+
   const handlePlayVideo = () => {
     setVideoStarted(true);
     if (videoRef.current) {
       videoRef.current.play();
+      
+      // Track video start
+      const userData = getUserData();
+      if (userData) {
+        sendTrackingEmail({
+          ...userData,
+          action: 'video_started',
+          timestamp: new Date().toISOString()
+        });
+      }
     }
   };
 
   const handleContactClick = () => {
-    // Aquí se puede implementar una acción para contactar al usuario usando los datos del formulario
-    alert("¡Gracias por tu interés! Nuestro equipo te contactará pronto.");
+    const userData = getUserData();
+    
+    if (userData) {
+      sendTrackingEmail({
+        ...userData,
+        action: 'contact_requested',
+        timestamp: new Date().toISOString()
+      });
+      
+      toast({
+        title: "¡Gracias por tu interés!",
+        description: "Nuestro equipo te contactará pronto.",
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "No se pudo procesar tu solicitud. Por favor, intenta de nuevo.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Video time update handler to track progress
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      const currentTime = Math.floor(videoRef.current.currentTime);
+      const duration = Math.floor(videoRef.current.duration);
+      
+      // Track progress at 25%, 50%, 75% points
+      const progressPoints = [0.25, 0.5, 0.75];
+      const currentProgress = currentTime / duration;
+      
+      progressPoints.forEach(point => {
+        if (Math.abs(currentProgress - point) < 0.01) {
+          const userData = getUserData();
+          if (userData) {
+            sendTrackingEmail({
+              ...userData,
+              action: `video_progress_${Math.floor(point * 100)}`,
+              timestamp: new Date().toISOString(),
+              videoProgress: currentTime,
+              videoDuration: duration
+            });
+          }
+        }
+      });
+    }
   };
 
   return (
@@ -72,6 +216,8 @@ const Webinar = () => {
                 controls
                 autoPlay
                 poster="/lovable-uploads/fdafc651-14c1-4db1-8d9d-a4a0171a29b6.png"
+                onTimeUpdate={handleTimeUpdate}
+                onEnded={() => setVideoEnded(true)}
               >
                 <source src="#" type="video/mp4" />
                 Su navegador no soporta el elemento de video.

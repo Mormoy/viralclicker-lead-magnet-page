@@ -26,6 +26,7 @@ const LeadForm = ({ isOpen, onClose, onSubmit }: LeadFormProps) => {
     email: '',
   });
   const [errors, setErrors] = useState<Partial<FormData>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,15 +56,63 @@ const LeadForm = ({ isOpen, onClose, onSubmit }: LeadFormProps) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const sendFormDataByEmail = async (data: FormData) => {
+    setIsSubmitting(true);
+    
+    try {
+      // Construct email data with formspree.io
+      const response = await fetch('https://formspree.io/f/info@viralclicker.com', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...data,
+          subject: 'Nuevo Lead de ViralClicker',
+          _replyto: data.email,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al enviar el formulario');
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error sending form data:', error);
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (validateForm()) {
-      onSubmit(formData);
-      toast({
-        title: "¡Formulario enviado con éxito!",
-        description: "Te redirigiremos a nuestro webinar.",
-      });
+      const emailSent = await sendFormDataByEmail(formData);
+      
+      if (emailSent) {
+        // Store user data in localStorage for tracking webinar completion
+        localStorage.setItem('viralclicker_user', JSON.stringify({
+          ...formData,
+          registrationDate: new Date().toISOString(),
+          webinarCompleted: false
+        }));
+        
+        onSubmit(formData);
+        
+        toast({
+          title: "¡Formulario enviado con éxito!",
+          description: "Te redirigiremos a nuestro webinar.",
+        });
+      } else {
+        toast({
+          title: "Error al enviar el formulario",
+          description: "Por favor, inténtalo de nuevo más tarde.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -122,8 +171,9 @@ const LeadForm = ({ isOpen, onClose, onSubmit }: LeadFormProps) => {
             <Button 
               type="submit" 
               className="w-full bg-viralOrange hover:bg-viralOrange/90 text-white font-bold py-6"
+              disabled={isSubmitting}
             >
-              Acceder ahora
+              {isSubmitting ? "Enviando..." : "Acceder ahora"}
             </Button>
             
             <p className="text-white/70 text-xs text-center mt-4">
