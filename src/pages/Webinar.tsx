@@ -109,7 +109,7 @@ const Webinar = () => {
                 <CardContent className="pt-6">
                   <div className="flex flex-col items-center">
                     <Avatar className="w-20 h-20 mb-4 border-2 border-viralOrange">
-                      <AvatarImage src="https://source.unsplash.com/random/300×300/?businesswoman" alt="Cliente 1" />
+                      <AvatarImage src="https://images.unsplash.com/photo-1494790108377-be9c29b29330" alt="Cliente 1" />
                       <AvatarFallback className="bg-viralOrange text-white">MC</AvatarFallback>
                     </Avatar>
                     <p className="text-white/90 text-center italic mb-4">
@@ -127,7 +127,7 @@ const Webinar = () => {
                 <CardContent className="pt-6">
                   <div className="flex flex-col items-center">
                     <Avatar className="w-20 h-20 mb-4 border-2 border-viralOrange">
-                      <AvatarImage src="https://source.unsplash.com/random/300×300/?businessman" alt="Cliente 2" />
+                      <AvatarImage src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d" alt="Cliente 2" />
                       <AvatarFallback className="bg-viralOrange text-white">JR</AvatarFallback>
                     </Avatar>
                     <p className="text-white/90 text-center italic mb-4">
@@ -145,7 +145,7 @@ const Webinar = () => {
                 <CardContent className="pt-6">
                   <div className="flex flex-col items-center">
                     <Avatar className="w-20 h-20 mb-4 border-2 border-viralOrange">
-                      <AvatarImage src="https://source.unsplash.com/random/300×300/?entrepreneur" alt="Cliente 3" />
+                      <AvatarImage src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2" alt="Cliente 3" />
                       <AvatarFallback className="bg-viralOrange text-white">LM</AvatarFallback>
                     </Avatar>
                     <p className="text-white/90 text-center italic mb-4">

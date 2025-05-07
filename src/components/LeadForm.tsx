@@ -37,11 +37,14 @@ const LeadForm = ({ isOpen, onClose, onSubmit }: LeadFormProps) => {
   const validateForm = () => {
     const newErrors: Partial<FormData> = {};
     if (!formData.fullName.trim()) newErrors.fullName = 'El nombre es requerido';
+    
+    // Validación actualizada para aceptar números internacionales con +
     if (!formData.phone.trim()) {
-      newErrors.phone = 'El teléfono es requerido';
-    } else if (!/^\d{9,10}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Teléfono inválido';
+      newErrors.phone = 'El número de WhatsApp es requerido';
+    } else if (!/^\+?[0-9]{9,15}$/.test(formData.phone.replace(/\s/g, ''))) {
+      newErrors.phone = 'Número de WhatsApp inválido';
     }
+    
     if (!formData.email.trim()) {
       newErrors.email = 'El correo electrónico es requerido';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -89,12 +92,12 @@ const LeadForm = ({ isOpen, onClose, onSubmit }: LeadFormProps) => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-white">Teléfono</Label>
+              <Label htmlFor="phone" className="text-white">Número de WhatsApp</Label>
               <Input
                 id="phone"
                 name="phone"
                 type="tel"
-                placeholder="Tu número de teléfono"
+                placeholder="+34 612 345 678"
                 value={formData.phone}
                 onChange={handleChange}
                 className="bg-white/10 border-viralOrange/50 text-white"
